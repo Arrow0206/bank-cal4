@@ -1,0 +1,127 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>芳菲的每日記帳本</title>
+    <style>
+        :root { --primary: #6c5ce7; --bg: #f9f9fb; --text: #2d3436; }
+        body { font-family: "Microsoft JhengHei", sans-serif; background: var(--bg); margin: 0; padding: 15px; color: var(--text); }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        h2 { text-align: center; color: var(--primary); margin-bottom: 20px; }
+        
+        .summary-card { background: var(--primary); color: white; padding: 20px; border-radius: 12px; text-align: center; margin-bottom: 20px; }
+        .total-amount { font-size: 28px; font-weight: bold; }
+
+        .input-box { display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px; border: 1px solid #eee; padding: 15px; border-radius: 10px; }
+        input, select, button { padding: 12px; border: 1px solid #ddd; border-radius: 8px; font-size: 16px; outline: none; }
+        button { background: var(--primary); color: white; border: none; font-weight: bold; cursor: pointer; }
+        button:active { opacity: 0.8; }
+
+        .history-list { margin-top: 20px; }
+        .history-item { display: flex; justify-content: space-between; padding: 12px; border-bottom: 1px solid #f1f1f1; align-items: center; }
+        .item-info { font-size: 14px; }
+        .item-category { background: #eee; padding: 2px 8px; border-radius: 4px; font-size: 12px; margin-right: 5px; }
+        .item-amount { font-weight: bold; color: #e74c3c; }
+        .btn-del { color: #ccc; font-size: 12px; border: none; background: none; cursor: pointer; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>💸 每日收支記帳</h2>
+
+    <div class="summary-card">
+        <div>今日總花費</div>
+        <div class="total-amount">NT$ <span id="todayTotal">0</span></div>
+    </div>
+
+    <div class="input-box">
+        <input type="text" id="itemName" placeholder="買了什麼？ (例如：午餐)">
+        <select id="category">
+            <option value="餐飲">🍱 餐飲</option>
+            <option value="交通">🚗 交通</option>
+            <option value="生活">🏠 生活</option>
+            <option value="娛樂">🎮 娛樂</option>
+            <option value="其他">✨ 其他</option>
+        </select>
+        <input type="number" id="amount" placeholder="多少錢？" inputmode="numeric">
+        <button onclick="addRecord()">➕ 新增記錄</button>
+    </div>
+
+    <div class="history-list" id="history">
+        </div>
+
+    <button style="background:#aaa; margin-top:30px; width:100%;" onclick="clearAll()">🔄 清除全部資料</button>
+</div>
+
+<script>
+    let records = JSON.parse(localStorage.getItem('daily_expenses') || '[]');
+
+    function addRecord() {
+        const name = document.getElementById('itemName').value;
+        const cat = document.getElementById('category').value;
+        const amt = parseFloat(document.getElementById('amount').value);
+        const date = new Date().toLocaleDateString();
+
+        if (name && amt > 0) {
+            records.unshift({ name, cat, amt, date }); // 加入列表最前面
+            saveAndRender();
+            // 清空輸入欄
+            document.getElementById('itemName').value = '';
+            document.getElementById('amount').value = '';
+        } else {
+            alert("請填寫名稱和正確金額");
+        }
+    }
+
+    function saveAndRender() {
+        localStorage.setItem('daily_expenses', JSON.stringify(records));
+        render();
+    }
+
+    function render() {
+        const list = document.getElementById('history');
+        const todayDate = new Date().toLocaleDateString();
+        let total = 0;
+        
+        list.innerHTML = '';
+        records.forEach((item, index) => {
+            if (item.date === todayDate) total += item.amt; // 只計算今天的錢
+
+            list.innerHTML += `
+                <div class="history-item">
+                    <div class="item-info">
+                        <span class="item-category">${item.cat}</span>
+                        <strong>${item.name}</strong><br>
+                        <small style="color:#aaa">${item.date}</small>
+                    </div>
+                    <div>
+                        <span class="item-amount">-$${item.amt}</span>
+                        <button class="btn-del" onclick="deleteItem(${index})">❌</button>
+                    </div>
+                </div>
+            `;
+        });
+        document.getElementById('todayTotal').innerText = total.toLocaleString();
+    }
+
+    function deleteItem(index) {
+        if(confirm("確定刪除這筆嗎？")) {
+            records.splice(index, 1);
+            saveAndRender();
+        }
+    }
+
+    function clearAll() {
+        if(confirm("確定要刪除所有歷史記錄嗎？")) {
+            records = [];
+            saveAndRender();
+        }
+    }
+
+    render(); // 初始載入
+</script>
+
+</body>
+</html>
